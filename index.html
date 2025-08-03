@@ -1,98 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF‑8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Guess the Poland Player</title>
-  <style>
-    body { font-family: sans-serif; padding:1rem; max-width:400px; margin:auto; }
-    h1 { text-align:center; font-size:1.5rem; }
-    #autocomplete { border:1px solid #ccc; max-height:150px; overflow:auto; }
-    .item { padding:0.5rem; cursor:pointer; }
-    .item:hover { background:#eee; }
-    #result img { max-width:100%; height:auto; margin-top:1rem; }
-    #hint { margin-top:1rem; font-style:italic; color:#555; }
-    button { margin-top:0.5rem; padding:.5rem .75rem; font-size:1rem; }
-  </style>
-</head>
+<html>
+<head><meta charset="UTF‑8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Test</title></head>
 <body>
-  <h1>Guess the Poland Player</h1>
-  <input id="guessInput" placeholder="Start typing name…" autocomplete="off">
-  <div id="autocomplete"></div>
-  <button id="submitBtn">Submit</button>
-  <div id="hint"></div>
-  <div id="result"></div>
-
 <script>
-const APIKEY = "1";  // Use the free public test key per TheSportsDB docs  [oai_citation:0‡thesportsdb.com](https://www.thesportsdb.com/forum_topic.php?s=30&t=1813&utm_source=chatgpt.com) [oai_citation:1‡thesportsdb.com](https://www.thesportsdb.com/documentation?utm_source=chatgpt.com)
-const TEAM_ID = 133901; // Poland national team
-
-let players = [];
-let answer = null;
-
-// Fetch roster of players
-async function fetchPlayers(){
-  const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/${APIKEY}/lookup_all_players.php?id=${TEAM_ID}`);
-  const json = await resp.json();
-  players = json.player || [];
-}
-
-// Choose a random hidden player
-function pickRandom(){
-  if(players.length > 0){
-    answer = players[Math.floor(Math.random() * players.length)];
+(async () => {
+  try {
+    const resp = await fetch('https://www.thesportsdb.com/api/v1/json/1/lookup_all_players.php?id=133901');
+    const json = await resp.json();
+    alert('Fetched ' + (json.player ? json.player.length : 'no') + ' players.');
+  } catch (e) {
+    alert('Error: ' + e.message);
   }
-}
-
-// Autocomplete filtering
-function setupAutocomplete(){
-  const inp = document.getElementById("guessInput");
-  const ac = document.getElementById("autocomplete");
-  inp.addEventListener("input", () => {
-    const val = inp.value.trim().toLowerCase();
-    ac.innerHTML = "";
-    if (!val) return;
-    players.filter(p => p.strPlayer.toLowerCase().includes(val)).slice(0,8).forEach(p => {
-      const div = document.createElement("div");
-      div.textContent = p.strPlayer;
-      div.className = "item";
-      div.onclick = () => { inp.value = p.strPlayer; ac.innerHTML = ""; };
-      ac.append(div);
-    });
-  });
-}
-
-// Handle guess submission
-async function submitGuess(){
-  const guess = document.getElementById("guessInput").value.trim();
-  const hintElm = document.getElementById("hint");
-  if (!answer) return;
-  if (guess.toLowerCase() === answer.strPlayer.toLowerCase()){
-    const resp = await fetch(`https://www.thesportsdb.com/api/v1/json/${APIKEY}/lookupplayer.php?id=${answer.idPlayer}`);
-    const js = await resp.json();
-    const p = js.players && js.players[0];
-    if (p){
-      document.getElementById("result").innerHTML = `
-        <img src="${p.strThumb}" alt="${p.strPlayer}">
-        <h2>${p.strPlayer}</h2>
-        <p>Position: ${p.strPosition}</p>
-        <p>Nationality: ${p.strNationality}</p>
-        <p>Born: ${p.dateBorn || 'N/A'}</p>
-        <p>${p.strDescriptionEN ? p.strDescriptionEN.split('. ')[0] + '.' : ''}</p>
-      `;
-    }
-    hintElm.textContent = "🎉 Correct!";
-  } else {
-    hintElm.textContent = "Hint: position is " + (answer.strPosition || "unknown");
-  }
-}
-
-document.getElementById("submitBtn").onclick = submitGuess;
-
-(async function(){
-  await fetchPlayers();
-  setupAutocomplete();
-  pickRandom();
 })();
 </script>
 </body>
