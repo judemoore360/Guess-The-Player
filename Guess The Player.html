@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guess the Player</title>
+<style>
+  body { font-family:sans-serif; padding:1rem; max-width:400px; margin:auto; }
+  h1 { text-align:center; font-size:1.5rem; }
+  #autocomplete { border:1px solid #ccc; max-height:150px; overflow:auto; }
+  .item { padding:0.5rem; cursor:pointer; }
+  .item:hover { background:#eee; }
+  #result img { max-width:100%; height:auto; margin-top:1rem; }
+  #hint { margin-top:1rem; font-style:italic; color:#555; }
+</style>
+</head>
+<body>
+<h1>Guess the Poland Player</h1>
+<input id="guessInput" placeholder="Start typing name…" autocomplete="off">
+<div id="autocomplete"></div>
+<button id="submitBtn">Submit</button>
+<div id="hint"></div>
+<div id="result"></div>
+
+<script>
+const APIKEY = "3"; // public free key
+let players = [];
+let answer = null;
+
+async function fetchPlayers() {
+  // lookup team Poland id=133901
+  const teamId = 133901;
+  const resp = await fetch(
+    \`https://www.thesportsdb.com/api/v1/json/\${APIKEY}/lookup_all_players.php?id=\${teamId}\`
+  );
+  const json = await resp.json();
+  players = json.player || [];
+}
+
+function pickRandom() {
+  answer = players[Math.floor(Math.random()*players.length)];
+}
+
+function setupAutocomplete(){
+  const inp = document.getElementById("guessInput");
+  const ac = document.getElementById("autocomplete");
+  inp.addEventListener("input", () => {
+    const val = inp.value.trim().toLowerCase();
+    ac.innerHTML = "";
+    if(!val) return;
+    players.filter(p => p.strPlayer.toLowerCase().includes(val))
+      .slice(0,8)
+      .forEach(p => {
+        const div = document.createElement("div");
+        div.textContent = p.strPlayer;
+        div.className = "item";
+        div.onclick = () => { inp.value = p.strPlayer; ac.innerHTML = ""; };
+        ac.appendChild(div);
+      });
+  });
+}
+
+async function submitGuess(){
+  const guess = document.getElementById("guessInput").value.trim();
+  const hintElm = document.getElementById("hint");
+  if(!answer) return;
+  if(guess.toLowerCase() === answer.strPlayer.toLowerCase()){
+    const resp = await fetch(
+      \`https://www.thesportsdb.com/api/v1/json/\${APIKEY}/lookupplayer.php?id=\${answer.idPlayer}\`
+    );
+    const data = await resp.json();
+    const p = data.players[0];
+    document.getElementById("result").innerHTML = \`
+      <img src="\${p.strThumb}" alt="\${p.strPlayer}">
+      <h2>\${p.strPlayer}</h2>
+      <p>Position: \${p.strPosition}</p>
+      <p>Nationality: \${p.strNationality}</p>
+      <p>Born: \${p.dateBorn || p.dateBorn ? p.dateBorn : "N/A"}</p>
+    \`;
+    hintElm.textContent = "";
+  } else {
+    hintElm.textContent = "Hint: position is " + (answer.strPosition || "unknown");
+  }
+}
+
+document.getElementById("submitBtn").onclick = submitGuess;
+
+(async function(){
+  await fetchPlayers();
+  setupAutocomplete();
+  pickRandom();
+})();
+</script>
+</body>
+</html>
